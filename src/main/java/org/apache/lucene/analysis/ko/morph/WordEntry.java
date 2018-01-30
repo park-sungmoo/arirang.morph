@@ -28,9 +28,9 @@ public class WordEntry {
   public static final int IDX_DOV = 3;
   public static final int IDX_BEV = 4;
   public static final int IDX_NE = 5;
-  public static final int IDX_ADJ = 6; // 형용사
-  public static final int IDX_NPR = 7;  // 명사의 분류 (M:Measure)
-  public static final int IDX_CNOUNX = 8; 
+  public static final int IDX_NOUN_DETAIL = 6; // 명사 세부정보
+  public static final int IDX_VERB_DETAIL = 7;  // 용언 세부정보
+  public static final int IDX_BUSA_DETAIL = 8;  // 부사 세부정보
   public static final int IDX_REGURA = 9;
   
   /**

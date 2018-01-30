@@ -85,7 +85,7 @@ public class DictionaryUtil {
       if(infos.length==2) 
         entry = new WordEntry(infos[0].trim(),"200000000X".toCharArray());
       else 
-        entry = new WordEntry(infos[0].trim(),("200"+infos[2]+"0X").toCharArray());
+        entry = new WordEntry(infos[0].trim(),("200"+infos[2]+"00X").toCharArray());
       
       entry.setCompounds(compoundArrayToList(infos[1], infos[1].split("[,]+")));
       dictionary.add(entry.getWord(), entry);
@@ -102,7 +102,7 @@ public class DictionaryUtil {
   }
 
   @SuppressWarnings({"rawtypes","unchecked"})
-  public static Iterator<String[]> findWithPrefix(String prefix) throws MorphException {
+  public static Iterator<WordEntry> findWithPrefix(String prefix) throws MorphException {
     if(dictionary==null) loadDictionary();
     return dictionary.getPrefixedBy(prefix);
   }
@@ -189,7 +189,7 @@ public class DictionaryUtil {
     WordEntry entry = getWord(key);
     if(entry==null) return null;
 
-    if(entry.getFeature(WordEntry.IDX_BUSA)=='1'&&entry.getFeature(WordEntry.IDX_NOUN)=='0') return entry;
+    if(entry.getFeature(WordEntry.IDX_BUSA)=='1') return entry;
     return null;
   }
   
@@ -281,12 +281,29 @@ public class DictionaryUtil {
     else return true;
   }
   
+  public static String getJosa(String str) throws MorphException {
+    if(josas==null) {
+      josas = new HashMap<String, String>();
+      readFile(josas,KoreanEnv.FILE_JOSA);
+    }  
+    return josas.get(str);
+  }
+  
+  public static String getEomi(String str)  throws MorphException {
+    if(eomis==null) {
+      eomis = new HashMap<String, String>();
+      readFile(eomis,KoreanEnv.FILE_EOMI);
+    }
+
+    return eomis.get(str);
+  }
+	  
   public static boolean existPrefix(String str)  throws MorphException {
     if(prefixs==null) {
       prefixs = new HashMap<String, String>();
       readFile(prefixs,KoreanEnv.FILE_PREFIX);
     }
-
+    
     if(prefixs.get(str)==null) return false;
     else return true;
   }
@@ -322,7 +339,7 @@ public class DictionaryUtil {
   }
   
   /**
-   * 
+   * modified at 2017-09-19 by smlee
    * @param map map
    * @param dic  1: josa, 2: eomi
    * @throws MorphException excepton
@@ -332,9 +349,17 @@ public class DictionaryUtil {
     String path = KoreanEnv.getInstance().getValue(dic);
 
     try{
-      List<String> line = FileUtil.readLines(path,"UTF-8");
-      for(int i=1;i<line.size();i++) {
-        map.put(line.get(i).trim(), line.get(i));
+      List<String> lines = FileUtil.readLines(path,"UTF-8");
+      
+      for(int i=1;i<lines.size();i++) {
+    	String word_string = lines.get(i).trim();
+    	String[] fields = word_string.split(",");
+
+    	if(fields.length==2) {
+    		map.put(fields[0].trim(), fields[1].trim());
+    	} else {
+    		map.put(word_string, word_string);
+    	}
       }
     }catch(IOException e) {
       throw new MorphException(e.getMessage(),e);

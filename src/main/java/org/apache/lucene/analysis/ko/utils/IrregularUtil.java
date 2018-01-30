@@ -56,11 +56,11 @@ public class IrregularUtil {
   public static String[] restoreIrregularVerb(String start, String end) throws MorphException {
 
     if(end==null) end="";
-    char[] jasos = new char[0];    
+    char[] jasos = new char[0];
 
     if(end.length()>0) jasos = MorphUtil.decompose(end.charAt(0));
 
-    if(end.startsWith("ㄴ") || 'ㄴ'==jasos[0]) {      
+    if(end.startsWith("ㄴ") || (jasos.length>0 && 'ㄴ'==jasos[0])) {      
       String[] irrs = restoreBIrregular(start,end);
       if(irrs!=null) return irrs;  
       irrs = restoreHIrregular(start,end);
@@ -247,7 +247,7 @@ public class IrregularUtil {
   }
   
   /**
-   * ㄹ불규칙 원형을 복원한다. (길다-->긴, 알다-->안, 만들다-->만드는)
+   * ㄹ불규칙 원형을 복원한다. (길다-->긴, 알다-->안, 만들다-->만드는, 힘들다-->힘든)
    * 어간의 끝소리인 ‘ㄹ’이 ‘ㄴ’, ‘ㄹ’, ‘ㅂ’, ‘오’, ‘시’ 앞에서 탈락하는 활용의 형식
    * @param start start text
    * @param end end text

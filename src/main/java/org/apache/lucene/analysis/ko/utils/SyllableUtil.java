@@ -99,7 +99,12 @@ public class SyllableUtil {
   public static char[] getFeature(char syl) throws MorphException {
     
     int idx = syl - 0xAC00;
-    return getFeature(idx);
+    char[] feature = getFeature(idx);
+    if(feature==null) {
+    	feature = getFeature(0);
+    }
+    
+    return feature;
     
   }
   

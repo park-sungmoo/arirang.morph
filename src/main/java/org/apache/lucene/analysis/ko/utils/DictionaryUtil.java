@@ -373,6 +373,7 @@ public class DictionaryUtil {
     for(String str: arr) {
       CompoundEntry ce = new CompoundEntry(str);
       ce.setOffset(source.indexOf(str));
+      ce.setCompoundDic(true);
       list.add(ce);
     }
     return list;

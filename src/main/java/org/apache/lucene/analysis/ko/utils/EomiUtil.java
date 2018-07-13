@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.ko.utils;
 import org.apache.lucene.analysis.ko.morph.AnalysisOutput;
 import org.apache.lucene.analysis.ko.morph.MorphException;
 import org.apache.lucene.analysis.ko.morph.PatternConstants;
+import org.apache.lucene.analysis.ko.morph.WordEntry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -579,7 +580,11 @@ public class EomiUtil {
     char[] chrs = MorphUtil.decompose(estem);
     if(chrs.length==1) return strs; // 한글이 아니라면...
 
-    if((chrs.length==3)
+    WordEntry verbEntry = DictionaryUtil.getVerb(stem);
+    
+    if(end.length()>0 && verbEntry!=null & DictionaryUtil.existEomi(end)) {
+    	strs = new String[]{stem, end};
+    }else if((chrs.length==3)
         &&(chrs[2]=='ㄴ'||chrs[2]=='ㄹ'||chrs[2]=='ㅁ'||chrs[2]=='ㅂ')
         &&EomiUtil.IsNLMBSyl(estem,chrs[2])
         && DictionaryUtil.combineAndEomiCheck(chrs[2], end)!=null) 
@@ -589,7 +594,7 @@ public class EomiUtil {
       
    	  strs[0] = stem.substring(0,strlen-1) + MorphUtil.makeChar(estem, 0);  
     } 
-    else if(chrs.length==3 && chrs[2]=='ㄹ' && DictionaryUtil.getVerb(stem)!=null && DictionaryUtil.combineAndEomiCheck(chrs[2], end)!=null) 
+    else if(chrs.length==3 && chrs[2]=='ㄹ' && verbEntry!=null && DictionaryUtil.combineAndEomiCheck(chrs[2], end)!=null) 
     {
         strs[1] = Character.toString(chrs[2]);
         if(end.length()>0) strs[1] += end;

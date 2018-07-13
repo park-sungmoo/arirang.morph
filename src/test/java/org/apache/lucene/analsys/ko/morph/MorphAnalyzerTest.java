@@ -11,7 +11,7 @@ public class MorphAnalyzerTest extends TestCase {
 
 	public void testMorphAnalyzer() throws Exception {
 		//사랑이 그대에게 말하거든 그를 믿으십시오.
-		String[] inputs = new String[]{"가시는"};
+		String[] inputs = new String[]{"목적은"};
 		
 		MorphAnalyzer analyzer = new MorphAnalyzer();
 		

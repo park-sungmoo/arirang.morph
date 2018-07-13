@@ -28,6 +28,9 @@ public class CompoundEntry {
   
   private boolean exist = true;
   
+  // this word is defined in the compound dictionary
+  private boolean compoundWord = false;
+  
   private char pos = PatternConstants.POS_NOUN;
   
   public CompoundEntry() {
@@ -84,4 +87,13 @@ public class CompoundEntry {
   public void setPos(char pos) {
     this.pos = pos;
   }  
+  
+  public void setCompoundDic(boolean is) {
+	  this.compoundWord = is;
+  }
+  
+  public boolean isCompoundDic() {
+	  return this.compoundWord;
+  }
+  
 }

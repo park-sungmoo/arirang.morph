@@ -23,45 +23,58 @@ import org.apache.lucene.analysis.ko.morph.PatternConstants;
 import org.apache.lucene.analysis.ko.morph.WordEntry;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
 public class VerbUtil {
 
-  public static final Map<String, String> verbSuffix = new HashMap<String, String>();
+  public static final HashSet<String> verbSuffix = new HashSet<String>();
   
-  public static final Map<String, String> XVerb = new HashMap<String, String>();
+  public static final HashSet<String> XVerb = new HashSet<String>();
   
-  public static final Map<String, String> wiAbbrevs = new HashMap<String, String>();
+  public static final HashSet<String> wiAbbrevs = new HashSet<String>();
   
   static {
     String[] suffixs = {
-        "이","하","되","내", "스럽","시키","있","없","같","당하","만하","드리","받","주","짓"};
-    for(int i=0;i<suffixs.length;i++) verbSuffix.put(suffixs[i], suffixs[i]);
+        "이","하","되","내", "있","없","같","드리","받","주","짓","스럽","시키","당하","만하"};
+    for(int i=0;i<suffixs.length;i++) verbSuffix.add(suffixs[i]);
     
-    String[] xverbs = {"오","내","주","보","지","놓","하","가","오르","올리","두"};
-    for(int i=0;i<xverbs.length;i++) XVerb.put(xverbs[i], xverbs[i]);
+    //어려워지다,어려워하다,주게되다,주게하다
+    String[] xverbs = {"오","내","주","보","지","놓","가","오르","올리","두","되","하"};
+    for(int i=0;i<xverbs.length;i++) XVerb.add(xverbs[i]);
     
     String[] eomis = {"고","거나", "다","란"}; // 이 축약이 일어나는 어미
-    for(int i=0;i<eomis.length;i++) wiAbbrevs.put(eomis[i], eomis[i]);
+    for(int i=0;i<eomis.length;i++) wiAbbrevs.add(eomis[i]);
   }
   
   /**
    * 어간이 용언화접미사로 끝나면 index 를 반환한다.  아니면 -1을 반환한다.
+ * @throws MorphException 
    */
-  public static int endsWithVerbSuffix(String stem) {
+  public static int endsWithVerbSuffix(String stem) throws MorphException {
     int len = stem.length();
     if(len<2 || (len==2 && stem.charAt(0)=='수' && stem.charAt(1)=='있')) return -1;
     int start = 2;
     if(len==2) start = 1;      
     for(int i=start;i>0;i--) { // the most length of verb suffix is 2
-      if(verbSuffix.get(stem.substring(len-i))!=null) return (len-i);
-    }    
+      int idx = len-i;
+      String suffix = stem.substring(idx);
+      
+      if(verbSuffix.contains(suffix)) {
+    	  if((suffix.equals("당하") || suffix.equals("만하"))) {
+    		  String noun = stem.substring(0, idx+1);
+    		  if(DictionaryUtil.getAllNoun(noun)!=null) continue;
+    	  }
+    	  
+    	  return idx;
+      }
+    }
     return -1;
   }
    
   /**
-   * 어간부에 보조용언 [하,되,오,내,주,지]가 있는지 조사한다.
+   * 어간부에 보조용언 [오,내,주,지]가 있는지 조사한다.
    */
   public static int endsWithXVerb(String stem) {
     int len = stem.length();
@@ -69,14 +82,14 @@ public class VerbUtil {
     int start = 2;
     if(len==2) start = 1;
     for(int i=start;i>0;i--) { //xverbs 의 가장 긴 글자수는 2이다.
-      if(XVerb.get(stem.substring(len-i))!=null) return (len-i);
+      if(XVerb.contains(stem.substring(len-i))) return (len-i);
     }
     return -1;
   }
    
   public static boolean verbSuffix(String stem) {
 
-    return verbSuffix.get(stem)!=null;
+    return verbSuffix.contains(stem);
      
   }
    
@@ -139,14 +152,19 @@ public class VerbUtil {
     if(o.getStem().endsWith("스러우")) o.setStem(o.getStem().substring(0,o.getStem().length()-3)+"스럽");
 
     int idxVbSfix = VerbUtil.endsWithVerbSuffix(o.getStem());
-    WordEntry entry = DictionaryUtil.getAllNoun(o.getStem());
-   
+
+    WordEntry entry =  DictionaryUtil.getWordExceptVerb(o.getStem());;
+    
     char[] chrs = MorphUtil.decompose(o.getStem().charAt(o.getStem().length()-1));
-    if(wiAbbrevs.get(o.getEomi())==null||entry==null) {
+    if(!wiAbbrevs.contains(o.getEomi())||entry==null) {
       if(idxVbSfix<1) return false;     
       o.setVsfx(o.getStem().substring(idxVbSfix));
       o.setStem(o.getStem().substring(0,idxVbSfix));
-      entry = DictionaryUtil.getAllNoun(o.getStem());
+      
+      if(o.getVsfx().equals("하"))
+    	  entry = DictionaryUtil.getWordExceptVerb(o.getStem());
+      else
+    	  entry = DictionaryUtil.getWordExceptVerb(o.getStem());
     } else { // 이 축약인 경우
       if(entry==null || chrs.length==3) return false;
       o.setVsfx("이");
@@ -154,10 +172,14 @@ public class VerbUtil {
     }
 
     o.setPatn(PatternConstants.PTN_NSM);
-    o.setPos(PatternConstants.POS_NOUN);
+
+    if(entry!=null && entry.getFeature(WordEntry.IDX_NOUN)=='0' && entry.getFeature(WordEntry.IDX_BUSA)=='1')
+    	o.setPos(PatternConstants.POS_ETC);
+    else
+    	o.setPos(PatternConstants.POS_NOUN);
         
     if(entry!=null) {
-      if(entry.getFeature(WordEntry.IDX_NOUN)=='0') return false;
+      if(entry.getFeature(WordEntry.IDX_NOUN)=='0' && entry.getFeature(WordEntry.IDX_BUSA)=='0') return false;
       else if(o.getVsfx().equals("하")&&entry.getFeature(WordEntry.IDX_DOV)!='1') return false;
       else if(o.getVsfx().equals("되")&&entry.getFeature(WordEntry.IDX_BEV)!='1') return false;
       else if(o.getVsfx().equals("내")&&entry.getFeature(WordEntry.IDX_NE)!='1') return false;
@@ -198,9 +220,7 @@ public class VerbUtil {
     o.setPatn(PatternConstants.PTN_NSMXM);
     o.setPos(PatternConstants.POS_NOUN);
     WordEntry entry = DictionaryUtil.getNoun(o.getStem());
-//    if(entry==null&&NounUtil.confirmCNoun(o)&&o.getCNounList().size()>0)  {
-//      entry = DictionaryUtil.getNoun(o.getCNounList().get(o.getCNounList().size()-1));
-//    }
+
     if(entry==null) return false;  
     
     if(o.getVsfx().equals("하")&&entry.getFeature(WordEntry.IDX_DOV)!='1') return false;
@@ -274,31 +294,58 @@ public class VerbUtil {
     
     String eogan = o.getStem().substring(0,idxXVerb);
 
-    String[] stomis = null;
-    if(eogan.endsWith("아")||eogan.endsWith("어")) {
-      stomis = EomiUtil.splitEomi(eogan.substring(0,eogan.length()-1),eogan.substring(eogan.length()-1));
-      if(stomis[0]==null) return false;
-    }else {
-      stomis =  EomiUtil.splitEomi(eogan, "");      
-      if(stomis[0]==null||!(stomis[1].startsWith("아")||stomis[1].startsWith("어"))) return false;
-    }
-
-    String[] irrs = IrregularUtil.restoreIrregularVerb(stomis[0], stomis[1]);
-    if(irrs!=null) {
-      o.setStem(irrs[0]);
-      o.addElist(irrs[1]);
-    } else {
-      o.setStem(stomis[0]);
-      o.addElist(stomis[1]);
-    }
-
-    if(DictionaryUtil.getVerb(o.getStem())!=null) {
-      o.setPos(PatternConstants.POS_VERB);
-      o.setPatn(PatternConstants.PTN_VMXM);
-      o.setScore(AnalysisOutput.SCORE_CORRECT);
-      candidates.add(o);
-    }  
-
-    return (o.getScore()==AnalysisOutput.SCORE_CORRECT);     
+    String[] stomis = analysisEomiByRule(eogan);
+    if(stomis[0]==null) return false;
+    
+    o.setStem(stomis[0]);
+    o.getElist().add(0, stomis[1]);
+    
+    o.setPos(PatternConstants.POS_VERB);
+    o.setPatn(PatternConstants.PTN_VMXM);
+    o.setScore(AnalysisOutput.SCORE_CORRECT);
+    candidates.add(o);
+    
+    return true;  
   }
+  
+  private static String[] analysisEomiByRule(String eogan) throws MorphException {
+	  
+	    boolean eomiFlag = true;
+	        
+	    int strlen = eogan.length();
+	    String[] irrs = null;
+	    
+	    String[] stomis =  EomiUtil.splitEomi(eogan, "");
+	    
+	    if(stomis[0]==null) 
+	    	return new String[2];
+	    else if(stomis[0]!=null && DictionaryUtil.getVerb(stomis[0])!=null) 
+	    	return stomis;
+	    
+	    irrs = IrregularUtil.restoreIrregularVerb(stomis[0], stomis[1]);
+	    if(irrs!=null) return irrs;
+	    
+	    for(int i=strlen-1;i>0;i--) {
+	      
+	      String stem = eogan.substring(0,i);
+	      String eomi = eogan.substring(i); 
+	      
+	      stomis =  EomiUtil.splitEomi(stem, eomi);     
+	      if(stomis[0]==null) 
+	    	return new String[2];
+	      else if(stomis[0]!=null && DictionaryUtil.getVerb(stomis[0])!=null) 
+	    	return stomis;
+	      
+	      irrs = IrregularUtil.restoreIrregularVerb(stomis[0], stomis[1]);
+	      if(irrs!=null) return irrs;
+		    
+	      char[] feature =  SyllableUtil.getFeature(eomi.charAt(0));   
+	      if(eomiFlag&&feature[SyllableUtil.IDX_EOMI2]=='0') eomiFlag = false;
+	      
+	      if(!eomiFlag) break;
+	    }
+	    
+	    return new String[2];
+	  }
+  
 }

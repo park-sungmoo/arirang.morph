@@ -96,11 +96,6 @@ public class ConstraintUtil {
     JOSA_THREE.put("을", "Y");
     JOSA_THREE.put("이", "Y");
   }
-  
-  public static boolean canHaheCompound(String key) {
-    if(hahes.get(key)!=null) return true;
-    return false;
-  }
     
   /**
    * 어미가 ㄴ,ㄹ,ㅁ 으로 끝나는지 조사한다.

@@ -18,8 +18,17 @@ package org.apache.lucene.analysis.ko.morph;
  */
 
 import java.util.Comparator;
+import java.util.HashSet;
 
 public class AnalysisOutputComparator<T> implements Comparator<T> {
+  
+  private static HashSet<String> termVerbPreferSet = new HashSet<String>();
+  
+  static {
+	  String[] terms = new String[]{"대한","대해","위해"};
+	  for(int i=0;i<terms.length;i++) termVerbPreferSet.add(terms[i]);
+  }
+  
   public int compare(T o1, T o2) {
     
     AnalysisOutput out1 = (AnalysisOutput)o1;
@@ -28,14 +37,20 @@ public class AnalysisOutputComparator<T> implements Comparator<T> {
     int score = out2.getScore()-out1.getScore();
     int pattern = out2.getPatn()-out1.getPatn();
     int len = out1.getStem().length()-out2.getStem().length();
-    
+
     if(score!=0) return score;
     
-    if(out2.getScore()==AnalysisOutput.SCORE_CORRECT &&
+    if(termVerbPreferSet.contains(out2.getStem()))
+    	return pattern;
+    else if(out2.getScore()==AnalysisOutput.SCORE_CORRECT &&
         out1.getScore()==AnalysisOutput.SCORE_CORRECT) {
       pattern = out1.getPatn()==PatternConstants.PTN_N || out1.getPatn()==PatternConstants.PTN_AID ? -1 : pattern;
       pattern = out2.getPatn()==PatternConstants.PTN_N || out2.getPatn()==PatternConstants.PTN_AID ? 1 : pattern;
     }
+
+
+    if(out2.getScore()==AnalysisOutput.SCORE_CORRECT && len!=0) 
+    	return len*-1;
     
     if(pattern!=0) return pattern;
     
@@ -45,10 +60,6 @@ public class AnalysisOutputComparator<T> implements Comparator<T> {
         return out2.getMaxWordLen()-out1.getMaxWordLen();
       if(out2.getDicWordLen()!=out1.getDicWordLen())
         return out2.getDicWordLen()-out1.getDicWordLen();
-    }
-    
-    if(out2.getPatn()==out1.getPatn()) {
-      len = out1.getStem().length()-out2.getStem().length();
     }
     
     return len;

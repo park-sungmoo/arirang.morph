@@ -33,7 +33,7 @@ public class NounUtil {
   public static final Set<String> DNouns = new HashSet<String>();
     
   static {
-    String[] strs = new String[]{"등", "들","상","간","뿐","별","적"};
+    String[] strs = new String[]{"등", "들","상","간","뿐","별"};
     for(String str:strs) {
       DNouns.add(str);
     }
@@ -51,7 +51,7 @@ public class NounUtil {
 
     int strlen = o.getStem().length();
        
-    if(strlen<2) return false;       
+    if(strlen<2 && !("함".equals(o.getStem()) || "됨".equals(o.getStem()))) return false;       
 
     char[] chrs = MorphUtil.decompose(o.getStem().charAt(strlen-1));
     boolean success = false;
@@ -258,14 +258,6 @@ public class NounUtil {
           
     return true;
   }
-    
-//      public static int endsWithDNoun(String stem)   {
-//          for(int i = 0; i < DNouns.length; i++)
-//              if(stem.endsWith(DNouns[i]))
-//                  return stem.lastIndexOf(DNouns[i]);
-//
-//          return -1;
-//      }
       
   public static boolean endsWith2Josa(String input) throws MorphException {
 

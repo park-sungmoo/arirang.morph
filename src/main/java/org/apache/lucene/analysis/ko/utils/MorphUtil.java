@@ -189,7 +189,7 @@ public class MorphUtil {
     }
   }
 
-  public static boolean hasVerbOnly(String input) {
+  public static boolean hasVerbSyllableOnly(String input) {
     
    try {
      for(int i=input.length()-1;i>=0;i--) {

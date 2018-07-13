@@ -12,6 +12,11 @@
 ! WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 ! See the License for the specific language governing permissions and
 ! limitations under the License.
-!
+! , is seperator for multiple analysis
 //#######
-거나:이/t,거나/e
+거나:이/V-거나/e-11
+갑작스런:갑작스럽/V-ㄴ/e-11
+가증스런:가증스럽/V-ㄴ/e-11
+뵌:뵙/V-ㄴ/e-11
+날으는:날/V-는/e-11
+사랑스런:사랑/N-스럽/t-ㄴ/e-3

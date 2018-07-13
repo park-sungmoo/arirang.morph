@@ -195,14 +195,14 @@ public class CompoundNounAnalyzer {
 			boolean isFirst) throws MorphException {
 
 		int[] units1 = { 2, 3 };
-		CompoundEntry[] entries1 = analysisBySplited(units1, input, isFirst);
+		CompoundEntry[] entries1 = analysisBySplited(units1, input, isFirst,true);
 		if (entries1 != null && existAllWord(entries1)) {
 			outputs.addAll(Arrays.asList(entries1));
 			return true;
 		}
 
 		int[] units2 = { 3, 2 };
-		CompoundEntry[] entries2 = analysisBySplited(units2, input, isFirst);
+		CompoundEntry[] entries2 = analysisBySplited(units2, input, isFirst,true);
 		if (entries2 != null && existAllWord(entries2)) {
 			outputs.addAll(Arrays.asList(entries2));
 			return true;
@@ -314,8 +314,8 @@ public class CompoundNounAnalyzer {
 				pos += entries.get(i).length();
 			}
 		}
-		if(entries.size()>1 &&
-				!validCompound(entries.get(entryLen-2), entries.get(entryLen-1), entryLen==2, pos)) {
+		if(entryLen>1 &&
+				!validCompound(entries.get(entryLen-2), entries.get(entryLen-1), entryLen==2, true, pos)) {
 			return false;
 		}
 		
@@ -372,7 +372,7 @@ public class CompoundNounAnalyzer {
 
 	private List<String> getBestCandidate(int pos, String input,
 			List<TreeMap<Integer, String>> wordlist,
-			Map<Integer, List<String>> posMap) {
+			Map<Integer, List<String>> posMap) throws MorphException {
 
 		if (wordlist.size() <= pos)
 			return null;
@@ -393,9 +393,14 @@ public class CompoundNounAnalyzer {
 			String term = candidates.get(index);
 
 			int tempscore = 0;
-			if (term.length() > 1)
-				tempscore += term.length();
-
+			
+			if(term.length() == 1) {
+				if(DictionaryUtil.getNoun(term)!=null) 
+					tempscore = 1;
+			} else {
+				tempscore = term.length()*2;
+			}
+			
 			List<String> terms = null;
 
 			if (pos + term.length() < input.length()) {
@@ -404,27 +409,10 @@ public class CompoundNounAnalyzer {
 				tempscore += getScore(terms);
 			}
 
-			if (bestterm == null || score < tempscore) {
-				bestcandidate = terms;
-				bestterm = term;
-				score = tempscore;
-			} else if (score == tempscore
-					&& bestcandidate != null
-					&& terms != null
-					&& terms.size() == 1
-					&& terms.get(terms.size() - 1).length() > bestcandidate
-							.get(bestcandidate.size() - 1).length()) { // (정보,법,학회)
-																		// >
-																		// (정보,법,학회)
-																		// / The
-																		// larger
-																		// length
-																		// the
-																		// last
-																		// word
-																		// has,
-																		// the
-																		// better
+			if (bestterm == null || 
+					score < tempscore || 
+					isBetterCompound(score,tempscore,terms, bestcandidate, term, bestterm)) 
+			{
 				bestcandidate = terms;
 				bestterm = term;
 				score = tempscore;
@@ -433,19 +421,55 @@ public class CompoundNounAnalyzer {
 
 		if (bestterm != null)
 			results.add(bestterm);
+		
 		if (bestcandidate != null)
 			results.addAll(bestcandidate);
+		
 		posMap.put(pos, results);
 
 		return results;
 	}
 
-	private int getScore(List<String> terms) {
-		int score = 0;
-		for (String term : terms) {
-			if (term.length() > 1)
-				score += term.length();
+	private boolean isBetterCompound(int score, int thisScore, List<String> terms, List<String> bestcandidate, String thisTerm, String bestTerm) {
+		if(score != thisScore || bestcandidate==null || terms==null) return false;
+		
+		// (정보,법,학회) / The larger length of the first word, the better
+		if( terms.size()==1 && terms.get(terms.size() - 1).length() > bestcandidate
+				.get(bestcandidate.size() - 1).length())
+			return true;
+		
+		if(terms.size()<bestcandidate.size())
+			return true;
+		
+		return !hasConsecutiveOneWord(terms);
+	}
+	/**
+	 * 연속적으로 한글자 단어가 있는지 조사한다.
+	 * @param terms
+	 * @return
+	 */
+	private boolean hasConsecutiveOneWord(List<String> terms) {
+		int prevLength = 0;
+		for(String term : terms) {
+			if(prevLength==1 && term.length()==1)
+				return true;
+			prevLength = term.length();
 		}
+		return false;
+	}
+	
+	private int getScore(List<String> terms) throws MorphException {
+		int score = 0;
+
+		for (String term : terms) {
+			if(term.length() == 1) {
+				if(DictionaryUtil.getNoun(term)!=null) 
+					score += 1;
+			} else {
+				score += term.length()*2;
+			}
+		}
+		
 		return score;
 	}
 
@@ -489,17 +513,23 @@ public class CompoundNounAnalyzer {
 
 	private CompoundEntry[] analysisBySplited(int[] units, String input,
 			boolean isFirst) throws MorphException {
+		return analysisBySplited(units, input, isFirst, true);
+	}
+	
+	private CompoundEntry[] analysisBySplited(int[] units, String input,
+			boolean isFirst, boolean isLast) throws MorphException {
 
 		List<CompoundEntry> entries = new ArrayList<CompoundEntry>();
 
 		int pos = 0;
+		int lastPos = units.length-1;
 		String prev = null;
 
 		for (int i = 0; i < units.length; i++) {
 
 			String str = input.substring(pos, pos + units[i]);
 
-			if (i != 0 && !validCompound(prev, str, isFirst && (i == 1), i))
+			if (i != 0 && !validCompound(prev, str, isFirst && (i == 1), isLast && (i==lastPos), i))
 				return null;
 
 			analyzeSingle(str, entries); // CompoundEntry 로 변환
@@ -527,7 +557,7 @@ public class CompoundNounAnalyzer {
 		// int ptn = PatternConstants.PTN_N;
 		char pos = PatternConstants.POS_NOUN;
 		if (input.length() == 1) {
-			entries.add(new CompoundEntry(input, 0, true, pos));
+			entries.add(new CompoundEntry(input, 0, true, pos)); 
 			return;
 		}
 
@@ -550,14 +580,14 @@ public class CompoundNounAnalyzer {
 
 	}
 
-	private boolean validCompound(String before, String after, boolean isFirst,
+	private boolean validCompound(String before, String after, boolean isFirst, boolean isLast,
 			int pos) throws MorphException {
 
 		if (pos == 1 && before.length() == 1
 				&& (!isFirst || !DictionaryUtil.existPrefix(before)))
 			return false;
 
-		if (after.length() == 1 && !isFirst
+		if (after.length() == 1 && isLast
 				&& !DictionaryUtil.existSuffix(after))
 			return false;
 

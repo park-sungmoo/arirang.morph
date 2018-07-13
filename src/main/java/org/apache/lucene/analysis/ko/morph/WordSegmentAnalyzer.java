@@ -2,6 +2,7 @@ package org.apache.lucene.analysis.ko.morph;
 
 import org.apache.lucene.analysis.ko.utils.DictionaryUtil;
 
+import java.lang.reflect.Array;
 import java.util.*;
 
 
@@ -49,12 +50,11 @@ public class WordSegmentAnalyzer {
         List<String> segList = splitByNoun(inputText, nounPos,oneJosa);
         List<List<AnalysisOutput>> result = new ArrayList<List<AnalysisOutput>>();
         
-        // less than 4 length word without noun can be a unknown noun. in many case it is a person's name.
-//        if(segList.size()==1 && inputText.length()<=4) return result;
-        
         int offset = 0;
         for(int i=0;i<segList.size();i++) {
         	int length = segList.get(i).length();
+        	if(length==1) return Collections.EMPTY_LIST;
+        	
         	boolean containOneJosa = isContainOneJosa(offset, length,oneJosa);
             analyze(segList.get(i), result, containOneJosa);
             offset += length;
@@ -159,8 +159,6 @@ public class WordSegmentAnalyzer {
     
     candiateList.add(listCandidate);
     
-    boolean divided = false;
-    
     Map<String,List<AnalysisOutput>> analyzedSet = new HashMap<String,List<AnalysisOutput>>();
     
     // from last position, check whether if each position can be a dividing point.
@@ -169,7 +167,6 @@ public class WordSegmentAnalyzer {
       String thisChar = Character.toString(inputText.charAt(start));
       List<WordListCandidate> newCandidates = null;
       
-//      if(!divided) {
         // newly created candidates
         newCandidates = new ArrayList<WordListCandidate>();
         
@@ -197,7 +194,6 @@ public class WordSegmentAnalyzer {
           
           newCandidates.add(newCandidate);
         }
-//      }
       
       List<AnalysisOutput> outputs = morphAnal.analyze(thisChar);
 
@@ -218,19 +214,15 @@ public class WordSegmentAnalyzer {
           Collections.sort(candiateList, new WordListComparator());
           removeLast(candiateList,adjustNoOfCandidate);
       }
-      
-//      int newStart = validation(candiateList, thisChar, start, inputText);
-//
-//      divided = (newStart==start);
-//      if(divided) start = newStart;
+     
     }
     
      Collections.sort(candiateList, new WordListComparator());
-//    List<AnalysisOutput> result = new ArrayList<AnalysisOutput>();
+
     for(WordListCandidate candidate : candiateList) {
       
       if(candiateList.indexOf(candidate)!=candiateList.size()-1 && 
-          hasConsecutiveOneWord(candidate))
+    	   hasConsecutiveOneWord(candidate))
         continue;
       
       for(List<AnalysisOutput> outputs : candidate.getWordList()) {
@@ -242,7 +234,7 @@ public class WordSegmentAnalyzer {
   }
   
   private boolean hasConsecutiveOneWord(WordListCandidate candidate) {
-    
+	    
     int size = candidate.getWordList().size();
     for(int i=1;i<size;i++) {
       List<AnalysisOutput> outputs1 = candidate.getWordList().get(i-1);

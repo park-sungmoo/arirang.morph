@@ -236,7 +236,6 @@ public class AnalysisOutput implements Cloneable {
   
   public AnalysisOutput clone() throws CloneNotSupportedException {
     AnalysisOutput output = (AnalysisOutput)super.clone();
-    
     output.setDinf(this.dinf);
     output.setEomi(this.eomi);
     output.setJosa(this.josa);
